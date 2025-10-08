@@ -47,7 +47,7 @@ jobs:
         env:
           TAURI_PRIVATE_KEY: ""
           TAURI_KEY_PASSWORD: ""
-        run: npm run tauri build
+        run: npm run tauri:build
 
       - name: Show bundle tree
         run: ls -laR src-tauri/target/release/bundle || true

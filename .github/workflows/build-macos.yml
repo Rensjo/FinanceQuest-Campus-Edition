@@ -39,7 +39,7 @@ jobs:
         env:
           TAURI_PRIVATE_KEY: ""
           TAURI_KEY_PASSWORD: ""
-        run: npm run tauri build -- --target universal-apple-darwin
+        run: npm run tauri:build -- --target universal-apple-darwin
 
       - name: Show bundle tree
         run: ls -laR src-tauri/target/universal-apple-darwin/release/bundle || true
