@@ -302,7 +302,7 @@ return (
         >
           {/* Logo Image */}
           <img 
-            src="/icons/icon.png"
+            src="/icons/icons.png"
             alt="F$"
             className="w-6 h-6 object-contain"
             style={{
