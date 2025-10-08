@@ -2,7 +2,6 @@
   "$schema": "https://tauri.app/v2/config",
   "productName": "FinanceQuest",
   "version": "0.1.0",
-  "identifier": "app.renkaistudios.financequest",
   "build": {
     "beforeDevCommand": "vite",
     "beforeBuildCommand": "vite build",
@@ -46,14 +45,17 @@
       "digestAlgorithm": "sha256",
       "timestampUrl": "",
       "wix": {
-        "language": "en-US",
-        "template": null
+        "language": "en-US"
       },
       "nsis": {
-        "installerIcon": "icons/icon.ico",
+        "license": null,
+        "headerImage": null,
+        "sidebarImage": null,
+        "installerIcon": null,
         "installMode": "perUser",
         "languages": ["en-US"],
-        "displayLanguageSelector": false
+        "displayLanguageSelector": false,
+        "compression": null
       }
     },
     "macOS": {
