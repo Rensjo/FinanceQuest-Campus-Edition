@@ -1,11 +1,27 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Dashboard from './components/Dashboard';
-import QuestsPanel from './components/QuestsPanel';
-import AchievementQuestsPanel from './components/AchievementQuestsPanel';
 import NotificationPopup, { NotificationData } from './components/NotificationPopup';
 import TransactionNotification from './components/TransactionNotification';
 import { useBudget } from './store/budget';
+import { useSoundEffects } from './hooks/useSoundEffects';
+import { usePerformanceMonitor } from './hooks/usePerformanceMonitor';
+import { useMemoryManagement } from './hooks/useMemoryManagement';
+import { useThrottle } from './hooks/useOptimization';
+
+// Lazy load heavy components for better initial load performance
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const QuestsPanel = lazy(() => import('./components/QuestsPanel'));
+const AchievementQuestsPanel = lazy(() => import('./components/AchievementQuestsPanel'));
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500 mx-auto mb-4"></div>
+      <p className="text-white text-lg">Loading...</p>
+    </div>
+  </div>
+);
 
 export default function App(){
 const [isQuestsOpen, setIsQuestsOpen] = useState(false);
@@ -18,6 +34,15 @@ const [transactionNotification, setTransactionNotification] = useState<{
   note?: string;
   envelopeName?: string;
 } | null>(null);
+
+// Performance monitoring
+usePerformanceMonitor('App');
+
+// Memory management
+const { safeSetTimeout, registerCleanup } = useMemoryManagement('App');
+
+// Initialize sound system
+const { playSound } = useSoundEffects();
 
 // Optimize store selectors - only re-render when these specific values change
 const quests = useBudget(s => s.game.quests);
@@ -48,6 +73,50 @@ useEffect(() => {
   document.body.classList.remove('light', 'dark');
   document.body.classList.add(activeTheme);
 }, [activeTheme]);
+
+// Add hover sound to interactive elements with optimized throttling
+const handleHoverSound = useThrottle((e: Event) => {
+  const target = e.target as HTMLElement;
+  
+  // Check if element is a button or has button/interactive role
+  const isButton = target.tagName === 'BUTTON' || target.closest?.('button');
+  const isInteractive = target.closest?.('[role="button"]') || target.classList?.contains?.('cursor-pointer');
+  
+  if (isButton || isInteractive) {
+    playSound('hover');
+  }
+}, 500);
+
+useEffect(() => {
+  // Use mouseover since it bubbles, unlike mouseenter
+  document.addEventListener('mouseover', handleHoverSound, true);
+  
+  return () => {
+    document.removeEventListener('mouseover', handleHoverSound, true);
+  };
+}, [handleHoverSound]);
+
+// Add click sound to all buttons and interactive elements
+useEffect(() => {
+  const handleClick = (e: Event) => {
+    const target = e.target as HTMLElement;
+    
+    // Check if element is a button or has button/interactive role
+    const isButton = target.tagName === 'BUTTON' || target.closest?.('button');
+    const isInteractive = target.closest?.('[role="button"]') || target.classList?.contains?.('cursor-pointer');
+    
+    if (isButton || isInteractive) {
+      playSound('button-click');
+    }
+  };
+
+  // Use click event with capture phase to catch all clicks
+  document.addEventListener('click', handleClick, true);
+  
+  return () => {
+    document.removeEventListener('click', handleClick, true);
+  };
+}, [playSound]);
 
 // Memoize computed values to prevent unnecessary recalculations
 const hasIncompleteDailyTasks = useMemo(
@@ -80,6 +149,7 @@ const [prevStreak, setPrevStreak] = useState(game.streak);
 useEffect(() => {
   // Check for level up
   if (game.level > prevLevel) {
+    playSound('level-up'); // Play level up sound
     setNotification({
       type: 'levelUp',
       title: 'LEVEL UP!',
@@ -94,6 +164,7 @@ useEffect(() => {
   const currentBadgeCount = game.badges?.filter(b => b.unlockedAt).length || 0;
   if (currentBadgeCount > prevBadgeCount) {
     const newBadge = game.badges?.find(b => b.unlockedAt && !prevBadgeCount)?.name;
+    playSound('badge-earned'); // Play badge sound
     setNotification({
       type: 'badge',
       title: 'NEW BADGE UNLOCKED!',
@@ -105,6 +176,7 @@ useEffect(() => {
 
   // Check for streak maintenance
   if (game.streak > prevStreak && game.streak > 0) {
+    playSound('quest-complete'); // Play quest complete sound for streak
     setNotification({
       type: 'streak',
       title: 'STREAK MAINTAINED!',
@@ -113,7 +185,7 @@ useEffect(() => {
     });
     setPrevStreak(game.streak);
   }
-}, [game.level, game.badges, game.streak, prevLevel, prevBadgeCount, prevStreak]);
+}, [game.level, game.badges, game.streak, prevLevel, prevBadgeCount, prevStreak, playSound]);
 
 // Monitor for quest completions
 useEffect(() => {
@@ -131,6 +203,7 @@ useEffect(() => {
   completedQuests.forEach(quest => {
     // Only show notification if this quest hasn't been notified before
     if (!notifiedQuests.has(quest.id)) {
+      playSound('quest-complete'); // Play quest complete sound
       if (quest.type === 'achievement') {
         setNotification({
           type: 'achievement',
@@ -169,6 +242,8 @@ useEffect(() => {
     const latestTransaction = transactions[0];
     const envelope = envelopes.find(e => e.id === latestTransaction.envelopeId);
     
+    playSound('coins'); // Play coins sound for transaction
+    
     setTransactionNotification({
       type: latestTransaction.type,
       amount: latestTransaction.amount,
@@ -179,7 +254,7 @@ useEffect(() => {
     
     setPrevTransactionCount(transactions.length);
   }
-}, [transactions, prevTransactionCount, envelopes]);
+}, [transactions, prevTransactionCount, envelopes, playSound]);
 
 // Clear new quest indicator when panel is opened
 const handleOpenQuests = () => {
@@ -496,9 +571,11 @@ return (
   </div>
 </div>
 
-{/* Quests Panels */}
-<QuestsPanel isOpen={isQuestsOpen} onClose={() => setIsQuestsOpen(false)} />
-<AchievementQuestsPanel isOpen={isAchievementsOpen} onClose={() => setIsAchievementsOpen(false)} />
+{/* Quests Panels - Lazy loaded */}
+<Suspense fallback={null}>
+  <QuestsPanel isOpen={isQuestsOpen} onClose={() => setIsQuestsOpen(false)} />
+  <AchievementQuestsPanel isOpen={isAchievementsOpen} onClose={() => setIsAchievementsOpen(false)} />
+</Suspense>
 
 {/* Notification Popup */}
 <NotificationPopup 
@@ -513,9 +590,11 @@ return (
 />
 
 <main className="mx-auto max-w-6xl px-4 pt-4 pb-6">
-<motion.div initial={{opacity:0, y:8}} animate={{opacity:1, y:0}}>
-<Dashboard />
-</motion.div>
+  <Suspense fallback={<LoadingFallback />}>
+    <motion.div initial={{opacity:0, y:8}} animate={{opacity:1, y:0}}>
+      <Dashboard />
+    </motion.div>
+  </Suspense>
 </main>
 </div>
 );

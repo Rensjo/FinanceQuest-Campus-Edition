@@ -56,6 +56,13 @@ export function seedStudent(): BudgetState {
       locale: 'en-PH',
       theme: 'system',
       firstRunCompleted: true,
+      soundSettings: {
+        masterVolume: 0.7,
+        sfxEnabled: true,
+        musicEnabled: false,
+        sfxVolume: 0.8,
+        musicVolume: 0.5
+      }
     },
     accounts: DEFAULT_ACCOUNTS,
     envelopes: STUDENT_ENVELOPES.map(e => ({ ...e, id: nanoid() })),
@@ -89,6 +96,13 @@ export function seedYoungPro(): BudgetState {
       locale: 'en-PH',
       theme: 'system',
       firstRunCompleted: true,
+      soundSettings: {
+        masterVolume: 0.7,
+        sfxEnabled: true,
+        musicEnabled: false,
+        sfxVolume: 0.8,
+        musicVolume: 0.5
+      }
     },
     accounts: DEFAULT_ACCOUNTS,
     envelopes: YOUNGPRO_ENVELOPES.map(e => ({ ...e, id: nanoid() })),

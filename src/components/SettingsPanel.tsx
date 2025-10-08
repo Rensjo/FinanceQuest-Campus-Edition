@@ -3,10 +3,11 @@
  */
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Settings, Palette, DollarSign, Globe, Download, Upload, Trash2, RefreshCw, Sparkles, Bell, Volume2, Music, FileText } from 'lucide-react';
+import { X, Settings, Palette, DollarSign, Globe, Download, Upload, Trash2, RefreshCw, Sparkles, Bell, Volume2, Music, FileText, VolumeX } from 'lucide-react';
 import { useBudget } from '../store/budget';
 import CSVManager from './CSVManager';
 import { useState } from 'react';
+import { useSoundEffects } from '../hooks/useSoundEffects';
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -14,13 +15,23 @@ interface SettingsPanelProps {
 }
 
 export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
-  const { prefs, resetData, restoreDefaultBills, initializeDefaultGoals, resetGoalsSavedAmounts } = useBudget();
+  const { prefs, resetData, restoreDefaultBills, initializeDefaultGoals, resetGoalsSavedAmounts, updateSoundSettings } = useBudget();
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showRestoreBillsConfirm, setShowRestoreBillsConfirm] = useState(false);
   
+  // Initialize sound system
+  const { playSound } = useSoundEffects();
+  
+  // Ensure soundSettings has defaults
+  const soundSettings = prefs?.soundSettings || {
+    masterVolume: 0.7,
+    sfxEnabled: true,
+    musicEnabled: false,
+    sfxVolume: 0.7,
+    musicVolume: 0.5
+  };
+  
   // Notification settings (placeholder for future implementation)
-  const [bgmEnabled, setBgmEnabled] = useState(false);
-  const [sfxEnabled, setSfxEnabled] = useState(true);
   const [popupNotifications, setPopupNotifications] = useState(true);
 
   // Currency options
@@ -275,60 +286,156 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                 </div>
               </div>
 
-              {/* Notifications & Audio */}
+              {/* Audio Settings */}
               <div className="card">
                 <div className="flex items-center gap-2 mb-4">
-                  <Bell className="w-5 h-5 text-blue-400" />
-                  <h3 className="text-lg font-semibold text-neutral-200">Notifications & Audio</h3>
+                  <Volume2 className="w-5 h-5 text-blue-400" />
+                  <h3 className="text-lg font-semibold text-neutral-200">Audio Settings</h3>
                 </div>
                 
                 <div className="space-y-4">
-                  {/* Background Music */}
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-neutral-800/50 border border-neutral-700">
-                    <div className="flex items-center gap-3">
-                      <Music className="w-5 h-5 text-purple-400" />
-                      <div>
-                        <p className="text-sm font-medium text-neutral-200">Background Music (BGM)</p>
-                        <p className="text-xs text-neutral-400">Play ambient music while using the app</p>
-                      </div>
+                  {/* Master Volume */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm text-neutral-300 flex items-center gap-2">
+                        {soundSettings.masterVolume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                        Master Volume
+                      </label>
+                      <span className="text-sm text-cyan-400 font-medium">{Math.round(soundSettings.masterVolume * 100)}%</span>
                     </div>
-                    <motion.button
-                      onClick={() => setBgmEnabled(!bgmEnabled)}
-                      whileTap={{ scale: 0.95 }}
-                      className={`relative w-12 h-6 rounded-full transition-colors ${
-                        bgmEnabled ? 'bg-purple-500' : 'bg-neutral-600'
-                      }`}
-                    >
-                      <motion.div
-                        animate={{ x: bgmEnabled ? 24 : 2 }}
-                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                        className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-lg"
-                      />
-                    </motion.button>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={soundSettings.masterVolume * 100}
+                      onChange={(e) => {
+                        updateSoundSettings({ masterVolume: parseInt(e.target.value) / 100 });
+                        playSound('button-click');
+                      }}
+                      className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                  </div>
+
+                  {/* Background Music */}
+                  <div className="p-3 rounded-lg bg-neutral-800/50 border border-neutral-700 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Music className="w-5 h-5 text-purple-400" />
+                        <div>
+                          <p className="text-sm font-medium text-neutral-200">Background Music</p>
+                          <p className="text-xs text-neutral-400">Ambient music with 3s loop delay</p>
+                        </div>
+                      </div>
+                      <motion.button
+                        onClick={() => {
+                          updateSoundSettings({ musicEnabled: !soundSettings.musicEnabled });
+                          playSound('button-click');
+                        }}
+                        whileTap={{ scale: 0.95 }}
+                        className={`relative w-12 h-6 rounded-full transition-colors ${
+                          soundSettings.musicEnabled ? 'bg-purple-500' : 'bg-neutral-600'
+                        }`}
+                      >
+                        <motion.div
+                          animate={{ x: soundSettings.musicEnabled ? 24 : 2 }}
+                          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                          className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-lg"
+                        />
+                      </motion.button>
+                    </div>
+                    
+                    {soundSettings.musicEnabled && (
+                      <div className="space-y-2 pl-8">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs text-neutral-400">Music Volume</label>
+                          <span className="text-xs text-purple-400 font-medium">{Math.round(soundSettings.musicVolume * 100)}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={soundSettings.musicVolume * 100}
+                          onChange={(e) => updateSoundSettings({ musicVolume: parseInt(e.target.value) / 100 })}
+                          className="w-full h-1.5 bg-neutral-700 rounded-lg appearance-none cursor-pointer slider-small"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {/* Sound Effects */}
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-neutral-800/50 border border-neutral-700">
-                    <div className="flex items-center gap-3">
-                      <Volume2 className="w-5 h-5 text-green-400" />
-                      <div>
-                        <p className="text-sm font-medium text-neutral-200">Sound Effects (SFX)</p>
-                        <p className="text-xs text-neutral-400">Play sounds for actions and events</p>
+                  <div className="p-3 rounded-lg bg-neutral-800/50 border border-neutral-700 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Volume2 className="w-5 h-5 text-green-400" />
+                        <div>
+                          <p className="text-sm font-medium text-neutral-200">Sound Effects</p>
+                          <p className="text-xs text-neutral-400">Clicks, hovers, achievements, etc.</p>
+                        </div>
                       </div>
+                      <motion.button
+                        onClick={() => {
+                          const newState = !soundSettings.sfxEnabled;
+                          updateSoundSettings({ sfxEnabled: newState });
+                          if (newState) playSound('button-click');
+                        }}
+                        whileTap={{ scale: 0.95 }}
+                        className={`relative w-12 h-6 rounded-full transition-colors ${
+                          soundSettings.sfxEnabled ? 'bg-green-500' : 'bg-neutral-600'
+                        }`}
+                      >
+                        <motion.div
+                          animate={{ x: soundSettings.sfxEnabled ? 24 : 2 }}
+                          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                          className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-lg"
+                        />
+                      </motion.button>
                     </div>
-                    <motion.button
-                      onClick={() => setSfxEnabled(!sfxEnabled)}
-                      whileTap={{ scale: 0.95 }}
-                      className={`relative w-12 h-6 rounded-full transition-colors ${
-                        sfxEnabled ? 'bg-green-500' : 'bg-neutral-600'
-                      }`}
-                    >
-                      <motion.div
-                        animate={{ x: sfxEnabled ? 24 : 2 }}
-                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                        className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-lg"
-                      />
-                    </motion.button>
+                    
+                    {soundSettings.sfxEnabled && (
+                      <div className="space-y-2 pl-8">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs text-neutral-400">SFX Volume</label>
+                          <span className="text-xs text-green-400 font-medium">{Math.round(soundSettings.sfxVolume * 100)}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={soundSettings.sfxVolume * 100}
+                          onChange={(e) => {
+                            updateSoundSettings({ sfxVolume: parseInt(e.target.value) / 100 });
+                            playSound('button-click');
+                          }}
+                          className="w-full h-1.5 bg-neutral-700 rounded-lg appearance-none cursor-pointer slider-small"
+                        />
+                        <div className="pt-2 flex flex-wrap gap-2">
+                          <motion.button
+                            onClick={() => playSound('button-click')}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="px-2 py-1 text-xs bg-neutral-700 hover:bg-neutral-600 rounded text-neutral-300 border border-neutral-600"
+                          >
+                            Test Click
+                          </motion.button>
+                          <motion.button
+                            onClick={() => playSound('coins')}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="px-2 py-1 text-xs bg-neutral-700 hover:bg-neutral-600 rounded text-neutral-300 border border-neutral-600"
+                          >
+                            Test Coins
+                          </motion.button>
+                          <motion.button
+                            onClick={() => playSound('level-up')}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="px-2 py-1 text-xs bg-neutral-700 hover:bg-neutral-600 rounded text-neutral-300 border border-neutral-600"
+                          >
+                            Test Level Up
+                          </motion.button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Popup Notifications */}

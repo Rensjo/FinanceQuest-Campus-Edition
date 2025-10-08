@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Settings } from 'lucide-react';
 import { useBudget } from '../store/budget';
+// import { useSound } from '../hooks/useSound'; // No longer needed - global click sounds in App.tsx
 import { AdventurerStatus } from './AdventurerStatus';
 import MonthlyOverview from './MonthlyOverview';
 import GeneralAnalytics from './GeneralAnalytics';
@@ -29,6 +30,9 @@ import type { Envelope, Goal, MonthlyBudgetConfig } from '../types';
 
 
 export default function Dashboard(){
+  // Sound effects - now handled globally in App.tsx
+  // const playClickSound = useSound('button-click');
+  
   const [isEnvelopeModalOpen, setIsEnvelopeModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [editingEnvelope, setEditingEnvelope] = useState<Envelope | undefined>(undefined);
@@ -151,16 +155,19 @@ export default function Dashboard(){
   }, [checkAndAwardBadges]);
 
   const handleEditEnvelope = (envelope: Envelope) => {
+    // playClickSound(); // Now handled globally
     setEditingEnvelope(envelope);
     setIsEnvelopeModalOpen(true);
   };
 
   const handleDeleteEnvelope = (envelope: Envelope) => {
+    // playClickSound(); // Now handled globally
     setDeletingEnvelope(envelope);
     setIsDeleteModalOpen(true);
   };
 
   const confirmDelete = () => {
+    // playClickSound(); // Now handled globally
     if (deletingEnvelope) {
       deleteEnvelope(deletingEnvelope.id);
       setDeletingEnvelope(null);
@@ -168,11 +175,13 @@ export default function Dashboard(){
   };
 
   const handleAddNew = () => {
+    // playClickSound(); // Now handled globally
     setEditingEnvelope(undefined);
     setIsEnvelopeModalOpen(true);
   };
 
   const handleEditGoal = (goal: Goal) => {
+    // playClickSound(); // Now handled globally
     setEditingGoal(goal);
     setIsGoalModalOpen(true);
   };
@@ -327,10 +336,10 @@ return (
           {/* Right: Adventurer Status with all action buttons inside */}
           <AdventurerStatus
             compact={true}
-            onStatusClick={() => setIsStatusOpen(true)}
-            onBadgesClick={() => setIsBadgesOpen(true)}
-            onShopClick={() => setIsShopOpen(true)}
-            onSettingsClick={() => setIsSettingsOpen(true)}
+            onStatusClick={() => { /* playClickSound(); */ setIsStatusOpen(true); }}
+            onBadgesClick={() => { /* playClickSound(); */ setIsBadgesOpen(true); }}
+            onShopClick={() => { /* playClickSound(); */ setIsShopOpen(true); }}
+            onSettingsClick={() => { /* playClickSound(); */ setIsSettingsOpen(true); }}
           />
         </div>
       </motion.div>

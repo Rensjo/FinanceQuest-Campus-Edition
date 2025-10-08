@@ -9,6 +9,14 @@ currency: Currency;
 locale: string; // e.g., 'en-PH'
 theme: 'light'|'dark'|'system';
 firstRunCompleted: boolean;
+// Sound settings
+soundSettings: {
+  masterVolume: number; // 0-1
+  sfxEnabled: boolean;
+  musicEnabled: boolean;
+  sfxVolume: number; // 0-1
+  musicVolume: number; // 0-1
+};
 }
 
 export interface MonthlyBudgetConfig {

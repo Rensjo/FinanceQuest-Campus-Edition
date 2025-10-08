@@ -216,6 +216,7 @@ interface BudgetActions {
   switchToMonth: (monthKey: string) => void; // Switch to a specific month (YYYY-MM)
   ensureAllAchievementQuests: () => void; // Ensure all achievement quests are present
   trackSectionView: (section: 'bills' | 'envelopes' | 'insights' | 'goals') => void; // Track section views for quests
+  updateSoundSettings: (settings: Partial<BudgetState['prefs']['soundSettings']>) => void; // Update sound settings
 }
 
 export const useBudget = create(persist<BudgetState & BudgetActions>(
@@ -1011,6 +1012,51 @@ export const useBudget = create(persist<BudgetState & BudgetActions>(
         };
       }
     }),
+
+    // Update sound settings
+    updateSoundSettings: (settings) => set((s) => {
+      // Ensure soundSettings exists with defaults
+      const currentSoundSettings = s.prefs.soundSettings || {
+        masterVolume: 0.7,
+        sfxEnabled: true,
+        musicEnabled: false,
+        sfxVolume: 0.8,
+        musicVolume: 0.5
+      };
+      
+      return {
+        ...s,
+        prefs: {
+          ...s.prefs,
+          soundSettings: {
+            ...currentSoundSettings,
+            ...settings
+          }
+        }
+      };
+    })
   }),
-  { name: 'financequest' }
+  { 
+    name: 'financequest',
+    version: 1,
+    migrate: (persistedState: any, version: number) => {
+      // Migration for sound settings (version 0 -> 1)
+      if (version === 0 || !persistedState.prefs?.soundSettings) {
+        return {
+          ...persistedState,
+          prefs: {
+            ...persistedState.prefs,
+            soundSettings: {
+              masterVolume: 0.7,
+              sfxEnabled: true,
+              musicEnabled: false,
+              sfxVolume: 0.8,
+              musicVolume: 0.5
+            }
+          }
+        };
+      }
+      return persistedState;
+    }
+  }
 ));

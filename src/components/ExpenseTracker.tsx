@@ -4,14 +4,19 @@
  */
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useMemo, memo } from 'react';
+import { useState, useMemo, memo, useCallback } from 'react';
 import { useBudget } from '../store/budget';
 import { formatCurrency } from '../utils/currency';
 import { SearchIcon, FilterIcon, Calendar, TrendingDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { StyledDropdown } from './StyledDropdown';
+import { usePerformanceMonitor } from '../hooks/usePerformanceMonitor';
+import { useVirtualScroll } from './VirtualScroll';
 
 function ExpenseTracker() {
+  // Performance monitoring
+  usePerformanceMonitor('ExpenseTracker');
+
   const { transactions, envelopes, prefs } = useBudget(s => ({
     transactions: s.transactions,
     envelopes: s.envelopes,
@@ -37,13 +42,30 @@ function ExpenseTracker() {
       });
   }, [transactions, filterCategory, sortBy]);
 
-  const getEnvelopeName = (id?: string) => {
+  // Memoize envelope lookup functions to avoid recreating on every render
+  const getEnvelopeName = useCallback((id?: string) => {
     return envelopes.find(e => e.id === id)?.name || 'Unknown';
-  };
+  }, [envelopes]);
 
-  const getEnvelopeColor = (id?: string) => {
+  const getEnvelopeColor = useCallback((id?: string) => {
     return envelopes.find(e => e.id === id)?.color || '#64748b';
-  };
+  }, [envelopes]);
+
+  // Use virtual scrolling for performance with large transaction lists
+  const ITEM_HEIGHT = 80; // Approximate height of each transaction item
+  const CONTAINER_HEIGHT = 500; // Height of scrollable container
+  
+  const {
+    visibleItems,
+    offsetY,
+    totalHeight,
+    handleScroll,
+  } = useVirtualScroll(
+    filteredTransactions,
+    ITEM_HEIGHT,
+    CONTAINER_HEIGHT,
+    5 // overscan
+  );
 
   return (
     <div className="card relative overflow-hidden flex flex-col h-full">
@@ -121,13 +143,17 @@ function ExpenseTracker() {
         </div>
       </div>
 
-      {/* Transaction History - Scrollable */}
+      {/* Transaction History - Scrollable with Virtual Scrolling */}
       <div className="flex-1 overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700/50 bg-neutral-50 dark:bg-neutral-900/30 min-h-0">
-        <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-400 dark:scrollbar-thumb-neutral-700 scrollbar-track-transparent hover:scrollbar-thumb-neutral-500 dark:hover:scrollbar-thumb-neutral-600">
+        <div 
+          className="overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-400 dark:scrollbar-thumb-neutral-700 scrollbar-track-transparent hover:scrollbar-thumb-neutral-500 dark:hover:scrollbar-thumb-neutral-600"
+          style={{ height: CONTAINER_HEIGHT }}
+          onScroll={handleScroll}
+        >
           {filteredTransactions.length > 0 ? (
-            <div className="space-y-1 p-2">
-              <AnimatePresence>
-                {filteredTransactions.map((txn, index) => (
+            <div style={{ height: totalHeight, position: 'relative' }}>
+              <div style={{ transform: `translateY(${offsetY}px)` }} className="space-y-1 p-2">
+                {visibleItems.map((txn, index) => (
                   <motion.div
                     key={txn.id}
                     initial={{ opacity: 0, x: -20 }}
@@ -186,7 +212,7 @@ function ExpenseTracker() {
                     )}
                   </motion.div>
                 ))}
-              </AnimatePresence>
+              </div>
             </div>
           ) : (
             <div className="h-full flex flex-col items-center justify-center p-6 text-center">
