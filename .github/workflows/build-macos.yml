@@ -1,4 +1,4 @@
-name: macOS Build
+name: Tauri macOS Build
 
 on:
   workflow_dispatch:
@@ -16,7 +16,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -27,7 +27,7 @@ jobs:
         with:
           targets: aarch64-apple-darwin,x86_64-apple-darwin
 
-      - name: Setup Rust cache
+      - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
@@ -35,72 +35,23 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Build frontend
-        run: npm run build
-
-      - name: Install Tauri CLI
-        run: npm install -g @tauri-apps/cli@^2.8.4
-
-      - name: Build Tauri app (Universal macOS)
+      - name: Build Tauri app (Universal)
         env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: |
-          tauri build --target universal-apple-darwin || tauri build
+          TAURI_PRIVATE_KEY: ""
+          TAURI_KEY_PASSWORD: ""
+        run: npm run tauri build -- --target universal-apple-darwin
 
-      - name: Show dist tree
-        run: ls -laR src-tauri/target/release/bundle || true
+      - name: Show bundle tree
+        run: ls -laR src-tauri/target/universal-apple-darwin/release/bundle || true
 
-      - name: Upload DMG (Intel)
+      - name: Upload DMG
         uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: FinanceQuest-macOS-x64-DMG
-          path: src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
-          if-no-files-found: ignore
-
-      - name: Upload DMG (Apple Silicon)
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: FinanceQuest-macOS-aarch64-DMG
-          path: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
-          if-no-files-found: ignore
-
-      - name: Upload DMG (Universal)
-        uses: actions/upload-artifact@v4
-        if: always()
         with:
           name: FinanceQuest-macOS-Universal-DMG
           path: src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
-          if-no-files-found: ignore
 
-      - name: Upload .app bundle (Intel)
+      - name: Upload .app bundle
         uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: FinanceQuest-macOS-x64-app
-          path: src-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.app
-          if-no-files-found: ignore
-
-      - name: Upload .app bundle (Apple Silicon)
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: FinanceQuest-macOS-aarch64-app
-          path: src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app
-          if-no-files-found: ignore
-
-      - name: Upload .app bundle (Universal)
-        uses: actions/upload-artifact@v4
-        if: always()
         with:
           name: FinanceQuest-macOS-Universal-app
           path: src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app
-          if-no-files-found: ignore
