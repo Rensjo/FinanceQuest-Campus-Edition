@@ -1,0 +1,12 @@
+[package]
+name = "financequest"
+version = "0.1.0"
+edition = "2021"
+description = "FinanceQuest — Campus Edition"
+
+
+[dependencies]
+tauri = { version = "2.0.0" }
+
+
+[build-dependencies]
