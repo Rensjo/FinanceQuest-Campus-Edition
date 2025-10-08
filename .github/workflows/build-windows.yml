@@ -65,14 +65,15 @@ jobs:
           
           New-Item -ItemType Directory -Force -Path $portableDir
           
-          Copy-Item "$sourceDir\${appName}.exe" $portableDir
-          Copy-Item "icons\icon.ico" "$portableDir\icon.ico"
+          Copy-Item "$sourceDir\${appName}.exe" $portableDir -ErrorAction Stop
           
-          # Create desktop.ini for folder icon
-          Set-Content -Path "$portableDir\desktop.ini" -Value "[.ShellClassInfo]`r`nIconResource=icon.ico,0"
+          if (Test-Path "icons\icon.ico") {
+            Copy-Item "icons\icon.ico" "$portableDir\icon.ico"
+            Set-Content -Path "$portableDir\desktop.ini" -Value "[.ShellClassInfo]`r`nIconResource=icon.ico,0"
+            attrib +h "$portableDir\desktop.ini"
+          }
+          
           attrib +s $portableDir
-          attrib +h "$portableDir\desktop.ini"
-          
           Compress-Archive -Path "$portableDir\*" -DestinationPath "dist\${appName}-Windows-Portable.zip"
 
       - name: Upload Portable ZIP

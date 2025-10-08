@@ -68,8 +68,8 @@ jobs:
       - name: Create portable archive
         run: |
           mkdir -p dist/FinanceQuest-Linux-Portable
-          cp src-tauri/target/release/finance-quest dist/FinanceQuest-Linux-Portable/
-          cp icons/icon.png dist/FinanceQuest-Linux-Portable/
+          cp src-tauri/target/release/financequest dist/FinanceQuest-Linux-Portable/
+          cp icons/icon.png dist/FinanceQuest-Linux-Portable/ 2>/dev/null || true
           cd dist
           tar -czf FinanceQuest-Linux-Portable.tar.gz FinanceQuest-Linux-Portable
 
