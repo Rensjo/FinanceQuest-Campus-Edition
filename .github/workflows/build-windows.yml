@@ -44,41 +44,34 @@ jobs:
       - name: Show bundle tree
         run: Get-ChildItem -Recurse src-tauri\target\release\bundle
 
-      - name: Upload MSI Installer
-        uses: actions/upload-artifact@v4
-        with:
-          name: FinanceQuest-Windows-MSI
-          path: src-tauri/target/release/bundle/msi/*.msi
-
-      - name: Upload NSIS Installer
-        uses: actions/upload-artifact@v4
-        with:
-          name: FinanceQuest-Windows-NSIS
-          path: src-tauri/target/release/bundle/nsis/*.exe
-
-      # Optional: Create portable folder
-      - name: Create portable folder
+      # Create comprehensive Windows package
+      - name: Create Windows Complete Package
         run: |
-          $appName = "FinanceQuest"
-          $sourceDir = "src-tauri\target\release"
-          $portableDir = "dist\${appName}-Windows-Portable"
+          $packageDir = "dist\FinanceQuest-Windows-v0.1.0"
+          New-Item -ItemType Directory -Force -Path $packageDir
           
+          # Copy installers
+          Copy-Item "src-tauri\target\release\bundle\msi\*.msi" "$packageDir\" -ErrorAction SilentlyContinue
+          Copy-Item "src-tauri\target\release\bundle\nsis\*.exe" "$packageDir\" -ErrorAction SilentlyContinue
+          
+          # Create portable executable
+          $portableDir = "$packageDir\Portable"
           New-Item -ItemType Directory -Force -Path $portableDir
-          
-          Copy-Item "$sourceDir\${appName}.exe" $portableDir -ErrorAction Stop
-          
+          Copy-Item "src-tauri\target\release\FinanceQuest.exe" "$portableDir\" -ErrorAction Stop
           if (Test-Path "icons\icon.ico") {
-            Copy-Item "icons\icon.ico" "$portableDir\icon.ico"
-            Set-Content -Path "$portableDir\desktop.ini" -Value "[.ShellClassInfo]`r`nIconResource=icon.ico,0"
-            attrib +h "$portableDir\desktop.ini"
+            Copy-Item "icons\icon.ico" "$portableDir\" -ErrorAction SilentlyContinue
           }
           
-          attrib +s $portableDir
-          Compress-Archive -Path "$portableDir\*" -DestinationPath "dist\${appName}-Windows-Portable.zip"
+          # Copy documentation
+          Copy-Item "LICENSE" "$packageDir\LICENSE.txt" -ErrorAction SilentlyContinue
+          Copy-Item "INSTALL_WINDOWS.md" "$packageDir\INSTALL_GUIDE.txt" -ErrorAction SilentlyContinue
+          Copy-Item "README.md" "$packageDir\README.txt" -ErrorAction SilentlyContinue
+          
+          # Create ZIP
+          Compress-Archive -Path "$packageDir\*" -DestinationPath "dist\FinanceQuest-Windows-v0.1.0-Complete.zip" -Force
 
-      - name: Upload Portable ZIP
+      - name: Upload Windows Complete Package
         uses: actions/upload-artifact@v4
         with:
-          name: FinanceQuest-Windows-Portable
-          path: dist/FinanceQuest-Windows-Portable.zip
-          if-no-files-found: ignore
+          name: FinanceQuest-Windows-Complete
+          path: dist/FinanceQuest-Windows-v0.1.0-Complete.zip

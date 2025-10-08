@@ -52,29 +52,33 @@ jobs:
       - name: Show bundle tree
         run: ls -laR src-tauri/target/release/bundle || true
 
-      - name: Upload AppImage
-        uses: actions/upload-artifact@v4
-        with:
-          name: FinanceQuest-Linux-AppImage
-          path: src-tauri/target/release/bundle/appimage/*.AppImage
-
-      - name: Upload DEB
-        uses: actions/upload-artifact@v4
-        with:
-          name: FinanceQuest-Linux-DEB
-          path: src-tauri/target/release/bundle/deb/*.deb
-
-      # Optional: Create portable tar.gz
-      - name: Create portable archive
+      # Create comprehensive Linux package
+      - name: Create Linux Complete Package
         run: |
-          mkdir -p dist/FinanceQuest-Linux-Portable
-          cp src-tauri/target/release/financequest dist/FinanceQuest-Linux-Portable/
-          cp icons/icon.png dist/FinanceQuest-Linux-Portable/ 2>/dev/null || true
+          mkdir -p dist/FinanceQuest-Linux-v0.1.0
+          
+          # Copy AppImage
+          cp src-tauri/target/release/bundle/appimage/*.AppImage dist/FinanceQuest-Linux-v0.1.0/ 2>/dev/null || true
+          
+          # Copy DEB package
+          cp src-tauri/target/release/bundle/deb/*.deb dist/FinanceQuest-Linux-v0.1.0/ 2>/dev/null || true
+          
+          # Create portable executable folder
+          mkdir -p dist/FinanceQuest-Linux-v0.1.0/Portable
+          cp src-tauri/target/release/financequest dist/FinanceQuest-Linux-v0.1.0/Portable/
+          cp icons/icon.png dist/FinanceQuest-Linux-v0.1.0/Portable/ 2>/dev/null || true
+          
+          # Copy documentation
+          cp LICENSE dist/FinanceQuest-Linux-v0.1.0/LICENSE.txt 2>/dev/null || true
+          cp INSTALL_LINUX.md dist/FinanceQuest-Linux-v0.1.0/INSTALL_GUIDE.txt 2>/dev/null || true
+          cp README.md dist/FinanceQuest-Linux-v0.1.0/README.txt 2>/dev/null || true
+          
+          # Create ZIP
           cd dist
-          tar -czf FinanceQuest-Linux-Portable.tar.gz FinanceQuest-Linux-Portable
+          zip -r FinanceQuest-Linux-v0.1.0-Complete.zip FinanceQuest-Linux-v0.1.0/
 
-      - name: Upload Portable TAR.GZ
+      - name: Upload Linux Complete Package
         uses: actions/upload-artifact@v4
         with:
-          name: FinanceQuest-Linux-Portable
-          path: dist/FinanceQuest-Linux-Portable.tar.gz
+          name: FinanceQuest-Linux-Complete
+          path: dist/FinanceQuest-Linux-v0.1.0-Complete.zip

@@ -44,14 +44,25 @@ jobs:
       - name: Show bundle tree
         run: ls -laR src-tauri/target/universal-apple-darwin/release/bundle || true
 
-      - name: Upload DMG
-        uses: actions/upload-artifact@v4
-        with:
-          name: FinanceQuest-macOS-Universal-DMG
-          path: src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+      # Create comprehensive macOS package
+      - name: Create macOS Complete Package
+        run: |
+          mkdir -p dist/FinanceQuest-macOS-v0.1.0
+          
+          # Copy DMG installer
+          cp src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg dist/FinanceQuest-macOS-v0.1.0/ 2>/dev/null || true
+          
+          # Copy documentation
+          cp LICENSE dist/FinanceQuest-macOS-v0.1.0/LICENSE.txt 2>/dev/null || true
+          cp INSTALL_MACOS.md dist/FinanceQuest-macOS-v0.1.0/INSTALL_GUIDE.txt 2>/dev/null || true
+          cp README.md dist/FinanceQuest-macOS-v0.1.0/README.txt 2>/dev/null || true
+          
+          # Create ZIP
+          cd dist
+          zip -r FinanceQuest-macOS-v0.1.0-Complete.zip FinanceQuest-macOS-v0.1.0/
 
-      - name: Upload .app bundle
+      - name: Upload macOS Complete Package
         uses: actions/upload-artifact@v4
         with:
-          name: FinanceQuest-macOS-Universal-app
-          path: src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app
+          name: FinanceQuest-macOS-Complete
+          path: dist/FinanceQuest-macOS-v0.1.0-Complete.zip
