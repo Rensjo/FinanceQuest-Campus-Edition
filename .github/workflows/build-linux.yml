@@ -1,0 +1,92 @@
+name: Linux Build
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libssl-dev \
+            libayatana-appindicator3-dev
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Install Tauri CLI
+        run: npm install -g @tauri-apps/cli@^2.8.4
+
+      - name: Build Tauri app (Linux)
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: tauri build
+
+      - name: Show dist tree
+        run: ls -laR src-tauri/target/release/bundle || true
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: FinanceQuest-Linux-AppImage
+          path: src-tauri/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: warn
+
+      - name: Upload DEB package
+        uses: actions/upload-artifact@v4
+        with:
+          name: FinanceQuest-Linux-DEB
+          path: src-tauri/target/release/bundle/deb/*.deb
+          if-no-files-found: warn
+
+      - name: Create Portable TAR.GZ
+        run: |
+          mkdir -p portable
+          cp src-tauri/target/release/finance-quest portable/ || cp src-tauri/target/release/financequest-campus portable/ || true
+          cp icons/icon.png portable/ 2>/dev/null || true
+          cp README.md portable/ 2>/dev/null || true
+          if [ -f portable/finance-quest ] || [ -f portable/financequest-campus ]; then
+            cd portable
+            tar -czf ../FinanceQuest-Linux-Portable.tar.gz .
+            cd ..
+          fi
+
+      - name: Upload Portable TAR.GZ
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: FinanceQuest-Linux-Portable
+          path: FinanceQuest-Linux-Portable.tar.gz
+          if-no-files-found: ignore
