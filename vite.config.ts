@@ -11,7 +11,10 @@ export default defineConfig({
     }),
   ],
   
-  assetsInclude: ['**/*.mp3', '**/*.MP3', '**/*.wav', '**/*.ogg'],
+  // Ensure public directory is properly set for Tauri
+  publicDir: 'public',
+  
+  assetsInclude: ['**/*.mp3', '**/*.MP3', '**/*.wav', '**/*.ogg', '**/*.png', '**/*.jpg', '**/*.jpeg', '**/*.svg', '**/*.webp'],
   
   // Build optimizations
   build: {
